@@ -237,6 +237,47 @@ export interface Database {
         }
         Relationships: []
       }
+      user_integrations: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          provider_user_id: string | null
+          access_token: string | null
+          token_data: Record<string, string> | null
+          last_sync_at: string | null
+          sync_status: string
+          sync_error: string | null
+          records_synced: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          provider_user_id?: string | null
+          access_token?: string | null
+          token_data?: Record<string, string> | null
+          last_sync_at?: string | null
+          sync_status?: string
+          sync_error?: string | null
+          records_synced?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          provider_user_id?: string | null
+          access_token?: string | null
+          token_data?: Record<string, string> | null
+          last_sync_at?: string | null
+          sync_status?: string
+          sync_error?: string | null
+          records_synced?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -247,6 +288,7 @@ export interface Database {
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type BodyMeasurement = Database['public']['Tables']['body_measurements']['Row']
+export type UserIntegration = Database['public']['Tables']['user_integrations']['Row']
 export type Gender = 'male' | 'female'
 export type Workout = Database['public']['Tables']['workouts']['Row']
 export type WorkoutSet = Database['public']['Tables']['workout_sets']['Row']

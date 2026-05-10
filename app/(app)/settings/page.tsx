@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, LogOut, CheckCircle2, Edit2, Save, X } from 'lucide-react'
+import Link from 'next/link'
+import { User, LogOut, CheckCircle2, Edit2, Save, X, ChevronRight, Wifi, WifiOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -30,6 +31,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [xiaomiConnected, setXiaomiConnected] = useState<boolean | null>(null)
 
   // Edit form state
   const [fullName, setFullName] = useState('')
@@ -40,7 +42,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadProfile()
+    loadXiaomiStatus()
   }, [])
+
+  async function loadXiaomiStatus() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('user_integrations')
+      .select('access_token').eq('user_id', user.id).eq('provider', 'xiaomi').maybeSingle()
+    setXiaomiConnected(!!data?.access_token)
+  }
 
   async function loadProfile() {
     const supabase = createClient()
@@ -320,6 +332,32 @@ export default function SettingsPage() {
           </form>
         )}
       </Card>
+
+      {/* Xiaomi integration */}
+      <Link href="/settings/xiaomi">
+        <Card className="cursor-pointer hover:border-[#333] transition-colors">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              xiaomiConnected ? 'bg-green-500/10' : 'bg-[#1A1A1A]'
+            }`}>
+              {xiaomiConnected
+                ? <Wifi size={20} className="text-green-400" />
+                : <WifiOff size={20} className="text-gray-500" />}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white">Xiaomi Cloud / Mi Scale</p>
+              <p className="text-xs text-gray-500">
+                {xiaomiConnected === null
+                  ? 'Загрузка…'
+                  : xiaomiConnected
+                    ? 'Подключено — автосинхронизация активна'
+                    : 'Не подключено — нажмите для настройки'}
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-gray-600" />
+          </div>
+        </Card>
+      </Link>
 
       {/* Sign out */}
       <Card>
