@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Dumbbell, TrendingUp, Heart, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Dumbbell, TrendingUp, Heart, LogOut, Menu, X, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Главная' },
   { href: '/progress', icon: TrendingUp, label: 'Прогресс' },
   { href: '/cycle', icon: Heart, label: 'Цикл' },
+  { href: '/settings', icon: Settings, label: 'Настройки' },
 ]
 
 export function AppNav() {

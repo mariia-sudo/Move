@@ -10,6 +10,10 @@ export interface Database {
           full_name: string | null
           avatar_url: string | null
           date_of_birth: string | null
+          gender: 'male' | 'female' | null
+          age: number | null
+          weight_kg: number | null
+          height_cm: number | null
           created_at: string
           updated_at: string
         }
@@ -19,6 +23,10 @@ export interface Database {
           full_name?: string | null
           avatar_url?: string | null
           date_of_birth?: string | null
+          gender?: 'male' | 'female' | null
+          age?: number | null
+          weight_kg?: number | null
+          height_cm?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -28,6 +36,10 @@ export interface Database {
           full_name?: string | null
           avatar_url?: string | null
           date_of_birth?: string | null
+          gender?: 'male' | 'female' | null
+          age?: number | null
+          weight_kg?: number | null
+          height_cm?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -192,6 +204,7 @@ export interface Database {
 }
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type Gender = 'male' | 'female'
 export type Workout = Database['public']['Tables']['workouts']['Row']
 export type WorkoutSet = Database['public']['Tables']['workout_sets']['Row']
 export type WorkoutCardio = Database['public']['Tables']['workout_cardio']['Row']

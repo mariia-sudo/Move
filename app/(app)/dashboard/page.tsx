@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { format, startOfWeek, isThisWeek } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { TrendingUp, Flame, Calendar, ChevronRight, Zap, Target } from 'lucide-react'
@@ -37,6 +38,7 @@ function getAIRecommendation(workouts: Workout[]): string[] {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(true)
@@ -49,13 +51,21 @@ export default function DashboardPage() {
       if (!user) return
 
       const [profileRes, workoutsRes] = await Promise.all([
-        supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+        supabase.from('profiles').select('full_name, gender, age, weight_kg, height_cm').eq('id', user.id).single(),
         supabase.from('workouts').select('*').eq('user_id', user.id)
           .order('date', { ascending: false }).limit(20),
       ])
 
-      if (profileRes.data?.full_name) {
-        setUserName(profileRes.data.full_name.split(' ')[0])
+      if (profileRes.data) {
+        if (profileRes.data.full_name) {
+          setUserName(profileRes.data.full_name.split(' ')[0])
+        }
+        // Redirect to profile setup if key fields are missing
+        const { gender, age, weight_kg, height_cm } = profileRes.data
+        if (!gender || !age || !weight_kg || !height_cm) {
+          router.replace('/profile/setup')
+          return
+        }
       }
       if (workoutsRes.data) {
         setWorkouts(workoutsRes.data)
@@ -64,7 +74,7 @@ export default function DashboardPage() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [router])
 
   function computeStreak(ws: Workout[]): number {
     if (!ws.length) return 0
