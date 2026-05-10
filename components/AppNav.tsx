@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Dumbbell, TrendingUp, Heart, LogOut, Menu, X, Settings } from 'lucide-react'
+import { LayoutDashboard, Dumbbell, TrendingUp, Heart, LogOut, Menu, X, Settings, Download } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Главная' },
   { href: '/progress', icon: TrendingUp, label: 'Прогресс' },
   { href: '/cycle', icon: Heart, label: 'Цикл' },
+  { href: '/import', icon: Download, label: 'Импорт' },
   { href: '/settings', icon: Settings, label: 'Настройки' },
 ]
 
@@ -151,14 +152,14 @@ export function AppNav() {
         </div>
       )}
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — show only the 4 most-used items + Log */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-xl border-t border-[#1A1A1A] px-2 pb-safe">
         <div className="flex items-center justify-around py-2">
-          {navItems.map(({ href, icon: Icon, label }) => (
+          {navItems.slice(0, 3).map(({ href, icon: Icon, label }) => (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all ${
                 pathname === href ? 'text-[#FF6B35]' : 'text-gray-500'
               }`}
             >
@@ -167,8 +168,17 @@ export function AppNav() {
             </Link>
           ))}
           <Link
+            href="/import"
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all ${
+              pathname === '/import' ? 'text-[#FF6B35]' : 'text-gray-500'
+            }`}
+          >
+            <Download size={22} />
+            <span className="text-[10px] font-medium">Импорт</span>
+          </Link>
+          <Link
             href="/workout/weightlifting"
-            className="flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl text-gray-500"
+            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-gray-500"
           >
             <Dumbbell size={22} />
             <span className="text-[10px] font-medium">Запись</span>

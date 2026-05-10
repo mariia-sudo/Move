@@ -195,6 +195,48 @@ export interface Database {
         }
         Relationships: []
       }
+      body_measurements: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          weight_kg: number | null
+          body_fat_percent: number | null
+          muscle_mass_kg: number | null
+          bone_mass_kg: number | null
+          water_percent: number | null
+          bmi: number | null
+          visceral_fat: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          weight_kg?: number | null
+          body_fat_percent?: number | null
+          muscle_mass_kg?: number | null
+          bone_mass_kg?: number | null
+          water_percent?: number | null
+          bmi?: number | null
+          visceral_fat?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          weight_kg?: number | null
+          body_fat_percent?: number | null
+          muscle_mass_kg?: number | null
+          bone_mass_kg?: number | null
+          water_percent?: number | null
+          bmi?: number | null
+          visceral_fat?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -204,6 +246,7 @@ export interface Database {
 }
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type BodyMeasurement = Database['public']['Tables']['body_measurements']['Row']
 export type Gender = 'male' | 'female'
 export type Workout = Database['public']['Tables']['workouts']['Row']
 export type WorkoutSet = Database['public']['Tables']['workout_sets']['Row']
