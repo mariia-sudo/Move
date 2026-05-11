@@ -12,8 +12,6 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import type { Workout, WorkoutCardio, WorkoutSet } from '@/types/database'
 
-type SportType = 'weightlifting' | 'running' | 'squash' | 'padel'
-
 const SPORT_CONFIG = {
   weightlifting: { emoji: '🏋️', label: 'Силовые', color: '#FF6B35' },
   running: { emoji: '🏃', label: 'Бег', color: '#3B82F6' },
@@ -23,12 +21,15 @@ const SPORT_CONFIG = {
 
 const PIE_COLORS = ['#FF6B35', '#3B82F6', '#22C55E', '#A855F7']
 
-function CustomTooltip({ active, payload, label }: any) {
+interface TooltipEntry { name: string; value: number | string; color: string }
+interface TooltipProps { active?: boolean; payload?: TooltipEntry[]; label?: string }
+
+function CustomTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-[#1A1A1A] border border-[#333] rounded-xl px-3 py-2 shadow-xl">
       <p className="text-xs text-gray-400 mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} className="text-sm font-semibold" style={{ color: p.color }}>{p.name}: {p.value}</p>
       ))}
     </div>

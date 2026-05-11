@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import {
   Upload, CheckCircle2, AlertCircle, FileText, TrendingDown, ChevronDown, ChevronUp,
@@ -128,12 +128,15 @@ export function parseMiFitnessCSV(text: string): { rows: ParsedRow[]; warnings: 
 
 // ─── Custom tooltip ────────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label }: any) {
+interface TooltipEntry { name: string; value: number | string; color: string }
+interface TooltipProps { active?: boolean; payload?: TooltipEntry[]; label?: string }
+
+function ChartTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-[#1A1A1A] border border-[#333] rounded-xl px-3 py-2 shadow-xl text-xs">
       <p className="text-gray-400 mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="font-semibold">{p.name}: {p.value}</p>
       ))}
     </div>
@@ -191,8 +194,8 @@ export default function ImportPage() {
         setWarnings(warnings)
         setParseError('')
         setStep('preview')
-      } catch (err: any) {
-        setParseError(err.message || 'Ошибка разбора файла')
+      } catch (err) {
+        setParseError(err instanceof Error ? err.message : 'Ошибка разбора файла')
         setStep('error')
       }
     }

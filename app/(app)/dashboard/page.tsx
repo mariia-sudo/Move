@@ -37,6 +37,23 @@ function getAIRecommendation(workouts: Workout[]): string[] {
   return tips.slice(0, 2)
 }
 
+function computeStreak(ws: Workout[]): number {
+    if (!ws.length) return 0
+    const dates = [...new Set(ws.map(w => w.date))].sort().reverse()
+    let s = 0
+    const today = format(new Date(), 'yyyy-MM-dd')
+    let expected = today
+    for (const d of dates) {
+      if (d === expected) {
+        s++
+        const prev = new Date(expected)
+        prev.setDate(prev.getDate() - 1)
+        expected = format(prev, 'yyyy-MM-dd')
+      } else break
+    }
+    return s
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [workouts, setWorkouts] = useState<Workout[]>([])
@@ -60,7 +77,6 @@ export default function DashboardPage() {
         if (profileRes.data.full_name) {
           setUserName(profileRes.data.full_name.split(' ')[0])
         }
-        // Redirect to profile setup if key fields are missing
         const { gender, age, weight_kg, height_cm } = profileRes.data
         if (!gender || !age || !weight_kg || !height_cm) {
           router.replace('/profile/setup')
@@ -75,23 +91,6 @@ export default function DashboardPage() {
     }
     load()
   }, [router])
-
-  function computeStreak(ws: Workout[]): number {
-    if (!ws.length) return 0
-    const dates = [...new Set(ws.map(w => w.date))].sort().reverse()
-    let s = 0
-    const today = format(new Date(), 'yyyy-MM-dd')
-    let expected = today
-    for (const d of dates) {
-      if (d === expected) {
-        s++
-        const prev = new Date(expected)
-        prev.setDate(prev.getDate() - 1)
-        expected = format(prev, 'yyyy-MM-dd')
-      } else break
-    }
-    return s
-  }
 
   const thisWeekWorkouts = workouts.filter(w =>
     isThisWeek(new Date(w.date), { weekStartsOn: 1 })

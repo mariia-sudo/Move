@@ -40,10 +40,8 @@ export default function SettingsPage() {
   const [weight, setWeight] = useState('')
   const [height, setHeight] = useState('')
 
-  useEffect(() => {
-    loadProfile()
-    loadXiaomiStatus()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadProfile(); loadXiaomiStatus() }, [])
 
   async function loadXiaomiStatus() {
     const supabase = createClient()

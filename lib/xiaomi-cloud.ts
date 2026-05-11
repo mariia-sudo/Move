@@ -76,7 +76,7 @@ export async function authenticateHuami(
         cache: 'no-store',
       },
     )
-  } catch (err: any) {
+  } catch {
     throw new Error('Сервер Huami недоступен. Проверьте подключение и попробуйте позже.')
   }
 
@@ -145,7 +145,12 @@ export async function authenticateHuami(
     throw new Error(`Ошибка Mi Fitness при получении токена (${step2Resp.status}).`)
   }
 
-  const j2 = await step2Resp.json() as any
+  interface Step2Response {
+    token_info?: { app_token?: string; user_id?: string | number }
+    code?: string
+    error_code?: string
+  }
+  const j2 = await step2Resp.json() as Step2Response
   const appToken = j2?.token_info?.app_token
   const userId = j2?.token_info?.user_id?.toString()
 
@@ -173,18 +178,43 @@ export interface BodyRecord {
   visceral_fat: number | null
 }
 
-function parseItem(item: any): BodyRecord | null {
-  const raw = (item.date ?? item.dateTime ?? '').toString()
-  // Date arrives as "20240115" (8 chars)
+interface RawWeightItem {
+  date?: string | number
+  dateTime?: string | number
+  weight?: string | number
+  bodyWeight?: string | number
+  bmi?: string | number
+  bodyfatrate?: string | number
+  fatrate?: string | number
+  bodyFatPercent?: string | number
+  musclemass?: string | number
+  muscleMass?: string | number
+  bonemass?: string | number
+  boneMass?: string | number
+  water?: string | number
+  waterPercent?: string | number
+  visceralfatgrade?: string | number
+  visceralFatGrade?: string | number
+  visceralfat?: string | number
+}
+
+function parseItem(item: RawWeightItem): BodyRecord | null {
+  const raw = ((item.date ?? item.dateTime) ?? '').toString()
   const date = raw.length === 8
     ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
     : null
 
-  const w = parseFloat(item.weight ?? item.bodyWeight)
+  const w = parseFloat(String(item.weight ?? item.bodyWeight ?? ''))
   if (!date || !w || isNaN(w)) return null
 
-  const f = (v: any): number | null => { const x = parseFloat(v); return isNaN(x) || x <= 0 ? null : x }
-  const fi = (v: any): number | null => { const x = parseInt(v); return isNaN(x) || x <= 0 ? null : x }
+  const f = (v: string | number | undefined): number | null => {
+    const x = parseFloat(String(v ?? ''))
+    return isNaN(x) || x <= 0 ? null : x
+  }
+  const fi = (v: string | number | undefined): number | null => {
+    const x = parseInt(String(v ?? ''))
+    return isNaN(x) || x <= 0 ? null : x
+  }
 
   return {
     date,
@@ -244,16 +274,19 @@ export async function fetchBodyData(
 
     if (!res.ok) continue
 
-    let data: any
-    try { data = await res.json() } catch { continue }
+    interface BandDataResponse {
+      code?: number
+      data?: { summary?: RawWeightItem[] }
+    }
+    let data: BandDataResponse
+    try { data = await res.json() as BandDataResponse } catch { continue }
 
-    // code 1 = success
     if (data?.code !== 1) {
       if (data?.code === 40001) throw new Error('Токен Mi Fitness недействителен. Переподключите аккаунт.')
       continue
     }
 
-    const items: any[] = data?.data?.summary ?? []
+    const items: RawWeightItem[] = data?.data?.summary ?? []
     const records: BodyRecord[] = []
     for (const item of items) {
       const r = parseItem(item)

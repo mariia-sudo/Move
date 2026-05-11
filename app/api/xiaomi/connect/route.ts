@@ -27,10 +27,11 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,provider' })
 
-    if (dbErr) throw new Error('Ошибка сохранения: ' + dbErr.message)
+    if (dbErr) throw new Error(`Ошибка сохранения: ${dbErr.message}`)
 
     return NextResponse.json({ success: true, userId, countryCode })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'Ошибка подключения' }, { status: 400 })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Ошибка подключения'
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 }

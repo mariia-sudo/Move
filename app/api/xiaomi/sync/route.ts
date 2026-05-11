@@ -25,7 +25,8 @@ export async function POST() {
   }).eq('user_id', user.id).eq('provider', 'xiaomi')
 
   try {
-    const countryCode = (integration.token_data as any)?.country_code ?? 'US'
+    const tokenData = integration.token_data as Record<string, string> | null
+    const countryCode = tokenData?.country_code ?? 'US'
     const fromDate = format(subMonths(new Date(), 12), 'yyyy-MM-dd')
     const toDate = format(new Date(), 'yyyy-MM-dd')
 
@@ -55,8 +56,8 @@ export async function POST() {
     }).eq('user_id', user.id).eq('provider', 'xiaomi')
 
     return NextResponse.json({ synced })
-  } catch (err: any) {
-    const msg = err.message ?? 'Ошибка синхронизации'
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Ошибка синхронизации'
     await supabase.from('user_integrations').update({
       sync_status: 'error',
       sync_error: msg,
