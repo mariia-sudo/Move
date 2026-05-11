@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, CheckCircle2, Dumbbell } from 'lucide-react'
+import { Plus, Trash2, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
@@ -30,7 +30,6 @@ export default function WeightliftingPage() {
   const [notes, setNotes] = useState('')
   const [setEntries, setSetEntries] = useState<SetEntry[]>([emptySet()])
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [showSuggestions, setShowSuggestions] = useState<number | null>(null)
 
@@ -82,22 +81,7 @@ export default function WeightliftingPage() {
 
     if (sErr) { setError(sErr.message); setLoading(false); return }
 
-    setSuccess(true)
-    setTimeout(() => router.push('/dashboard'), 1500)
-  }
-
-  if (success) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-green-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={32} className="text-green-400" />
-          </div>
-          <h2 className="text-xl font-bold">Тренировка сохранена!</h2>
-          <p className="text-gray-400 mt-1 text-sm">Возвращаемся на главную...</p>
-        </div>
-      </div>
-    )
+    router.push(`/workout/feedback?id=${workout.id}`)
   }
 
   return (

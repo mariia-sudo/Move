@@ -1,15 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { format, subMonths, eachWeekOfInterval, endOfWeek } from 'date-fns'
+import { format, subMonths, subDays, eachWeekOfInterval, endOfWeek } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell,
 } from 'recharts'
+import { AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { areaLabel } from '@/components/workout/BodyMap'
 import type { Workout, WorkoutCardio, WorkoutSet } from '@/types/database'
 
 const SPORT_CONFIG = {
@@ -36,10 +38,51 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
   )
 }
 
+// ─── Pain insight detection ────────────────────────────────────────────────────
+
+interface PainInsight {
+  area: string
+  sport: string
+  count: number
+  level: 'warning' | 'danger'
+}
+
+interface FeedbackRow {
+  pain_areas: string[]
+  workouts: { sport_type: string } | null
+}
+
+function detectPainInsights(feedback: FeedbackRow[]): PainInsight[] {
+  const tally: Record<string, Record<string, number>> = {}
+  for (const f of feedback) {
+    const sport = f.workouts?.sport_type ?? 'unknown'
+    for (const area of f.pain_areas) {
+      if (!tally[area]) tally[area] = {}
+      tally[area][sport] = (tally[area][sport] ?? 0) + 1
+    }
+  }
+  const insights: PainInsight[] = []
+  for (const [area, sports] of Object.entries(tally)) {
+    for (const [sport, count] of Object.entries(sports)) {
+      if (count >= 3) {
+        insights.push({ area, sport, count, level: count >= 5 ? 'danger' : 'warning' })
+      }
+    }
+  }
+  return insights.sort((a, b) => b.count - a.count)
+}
+
+const SPORT_LABEL_MAP: Record<string, string> = {
+  weightlifting: 'силовых', running: 'пробежек', squash: 'сквоша', padel: 'паделя',
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
+
 export default function ProgressPage() {
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [cardioData, setCardioData] = useState<(WorkoutCardio & { date: string })[]>([])
   const [setsData, setSetsData] = useState<(WorkoutSet & { date: string })[]>([])
+  const [painInsights, setPainInsights] = useState<PainInsight[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -49,6 +92,7 @@ export default function ProgressPage() {
       if (!user) return
 
       const sixMonthsAgo = format(subMonths(new Date(), 6), 'yyyy-MM-dd')
+      const thirtyDaysAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd')
 
       const workoutsRes = await supabase.from('workouts').select('*').eq('user_id', user.id)
         .gte('date', sixMonthsAgo).order('date', { ascending: true })
@@ -79,6 +123,18 @@ export default function ProgressPage() {
             setSetsData(enriched)
           }
         }
+      }
+
+      // Load pain insights (last 30 days)
+      const { data: feedbackRaw } = await supabase
+        .from('workout_feedback')
+        .select('pain_areas, workouts(sport_type)')
+        .eq('user_id', user.id)
+        .gte('created_at', thirtyDaysAgo)
+
+      if (feedbackRaw) {
+        const withPain = (feedbackRaw as FeedbackRow[]).filter(f => f.pain_areas.length > 0)
+        setPainInsights(detectPainInsights(withPain))
       }
 
       setLoading(false)
@@ -269,6 +325,44 @@ export default function ProgressPage() {
               <Bar dataKey="volume" fill="#FF6B35" radius={[4, 4, 0, 0]} name="Объём" />
             </BarChart>
           </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Pain pattern insights */}
+      {painInsights.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-yellow-400" />
+              <h2 className="text-sm font-semibold text-white">Паттерны боли (30 дней)</h2>
+            </div>
+            <Badge variant="gray">{painInsights.length} сигнал{painInsights.length === 1 ? '' : 'а'}</Badge>
+          </CardHeader>
+          <div className="space-y-3">
+            {painInsights.map((ins, i) => (
+              <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${
+                ins.level === 'danger'
+                  ? 'bg-red-500/8 border-red-500/20'
+                  : 'bg-yellow-500/8 border-yellow-500/20'
+              }`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                  ins.level === 'danger' ? 'bg-red-500/15' : 'bg-yellow-500/15'
+                }`}>
+                  <AlertTriangle size={12} className={ins.level === 'danger' ? 'text-red-400' : 'text-yellow-400'} />
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${ins.level === 'danger' ? 'text-red-300' : 'text-yellow-300'}`}>
+                    {areaLabel(ins.area)} — {ins.count} раз{ins.count >= 5 ? '' : 'а'} после {SPORT_LABEL_MAP[ins.sport] ?? ins.sport}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {ins.level === 'danger'
+                      ? 'Частые жалобы — стоит проконсультироваться со специалистом'
+                      : 'Обратите внимание на технику и восстановление'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 

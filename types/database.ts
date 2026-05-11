@@ -278,6 +278,35 @@ export interface Database {
         }
         Relationships: []
       }
+      workout_feedback: {
+        Row: {
+          id: string
+          workout_id: string
+          user_id: string
+          energy_level: number | null
+          mood: 'tired' | 'good' | 'great' | 'overtrained' | null
+          pain_areas: string[]
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          workout_id: string
+          user_id: string
+          energy_level?: number | null
+          mood?: 'tired' | 'good' | 'great' | 'overtrained' | null
+          pain_areas?: string[]
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          energy_level?: number | null
+          mood?: 'tired' | 'good' | 'great' | 'overtrained' | null
+          pain_areas?: string[]
+          notes?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -289,6 +318,8 @@ export interface Database {
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type BodyMeasurement = Database['public']['Tables']['body_measurements']['Row']
 export type UserIntegration = Database['public']['Tables']['user_integrations']['Row']
+export type WorkoutFeedback = Database['public']['Tables']['workout_feedback']['Row']
+export type FeedbackMood = 'tired' | 'good' | 'great' | 'overtrained'
 export type Gender = 'male' | 'female'
 export type Workout = Database['public']['Tables']['workouts']['Row']
 export type WorkoutSet = Database['public']['Tables']['workout_sets']['Row']
