@@ -426,36 +426,6 @@ export default function SettingsPage() {
               { value: 'regularly',label: 'Регулярно'     },
             ]}
           />
-          <HabitRow
-            label="Качество сна"
-            value={sleepQuality}
-            onChange={setSleepQuality}
-            options={[
-              { value: 'under6', label: '< 6 часов' },
-              { value: '6to8',   label: '6–8 часов'  },
-              { value: 'over8',  label: '> 8 часов'  },
-            ]}
-          />
-          <HabitRow
-            label="Уровень стресса"
-            value={stressLevel}
-            onChange={setStressLevel}
-            options={[
-              { value: 'low',    label: 'Низкий'  },
-              { value: 'medium', label: 'Средний' },
-              { value: 'high',   label: 'Высокий' },
-            ]}
-          />
-          <HabitRow
-            label="Потребление воды"
-            value={waterIntake}
-            onChange={setWaterIntake}
-            options={[
-              { value: 'under1l', label: '< 1 л'   },
-              { value: '1to2l',   label: '1–2 л'    },
-              { value: 'over2l',  label: '> 2 л'    },
-            ]}
-          />
         </div>
 
         {habitsSaved && (
