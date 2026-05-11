@@ -19,33 +19,31 @@ export async function POST() {
     return NextResponse.json({ error: 'Xiaomi не подключён' }, { status: 400 })
   }
 
-  // Mark as syncing
   await supabase.from('user_integrations').update({
     sync_status: 'syncing',
     updated_at: new Date().toISOString(),
   }).eq('user_id', user.id).eq('provider', 'xiaomi')
 
   try {
+    const countryCode = (integration.token_data as any)?.country_code ?? 'US'
     const fromDate = format(subMonths(new Date(), 12), 'yyyy-MM-dd')
     const toDate = format(new Date(), 'yyyy-MM-dd')
 
     const records = await fetchBodyData(
       integration.access_token,
       integration.provider_user_id,
+      countryCode,
       fromDate,
       toDate,
     )
 
     let synced = 0
-    if (records.length > 0) {
-      // Upsert in batches of 200
-      for (let i = 0; i < records.length; i += 200) {
-        const batch = records.slice(i, i + 200).map(r => ({ ...r, user_id: user.id }))
-        const { error } = await supabase.from('body_measurements')
-          .upsert(batch, { onConflict: 'user_id,date' })
-        if (error) throw new Error(error.message)
-        synced += batch.length
-      }
+    for (let i = 0; i < records.length; i += 200) {
+      const batch = records.slice(i, i + 200).map(r => ({ ...r, user_id: user.id }))
+      const { error } = await supabase.from('body_measurements')
+        .upsert(batch, { onConflict: 'user_id,date' })
+      if (error) throw new Error(error.message)
+      synced += batch.length
     }
 
     await supabase.from('user_integrations').update({

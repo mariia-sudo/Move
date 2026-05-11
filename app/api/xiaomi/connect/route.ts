@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
-import { authenticateXiaomi, getHuamiAppToken } from '@/lib/xiaomi-cloud'
+import { authenticateHuami } from '@/lib/xiaomi-cloud'
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json() as { email?: string; password?: string }
@@ -14,31 +13,23 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
 
   try {
-    // Authenticate with Xiaomi — this never stores the password
-    const tokens = await authenticateXiaomi(email, password)
+    // Two-step Huami auth — password is NEVER stored
+    const { appToken, userId, countryCode, deviceId } = await authenticateHuami(email, password)
 
-    // Exchange for Mi Fitness (Huami) app token
-    const deviceId = crypto.randomBytes(8).toString('hex').toUpperCase()
-    const appToken = await getHuamiAppToken(tokens, deviceId)
-
-    // Persist only tokens, never the password
     const { error: dbErr } = await supabase.from('user_integrations').upsert({
       user_id: user.id,
       provider: 'xiaomi',
-      provider_user_id: tokens.userId,
+      provider_user_id: userId,
       access_token: appToken,
-      token_data: {
-        service_token: tokens.serviceToken,
-        device_id: deviceId,
-      },
+      token_data: { country_code: countryCode, device_id: deviceId },
       sync_status: 'connected',
       sync_error: null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,provider' })
 
-    if (dbErr) throw new Error('Ошибка сохранения токенов: ' + dbErr.message)
+    if (dbErr) throw new Error('Ошибка сохранения: ' + dbErr.message)
 
-    return NextResponse.json({ success: true, userId: tokens.userId })
+    return NextResponse.json({ success: true, userId, countryCode })
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? 'Ошибка подключения' }, { status: 400 })
   }
