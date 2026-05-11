@@ -11,6 +11,39 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import type { Profile, Gender } from '@/types/database'
 
+// ─── Habit selector ─────────────────────────────────────────────────────────
+
+function HabitRow({ label, options, value, onChange }: {
+  label: string
+  options: { value: string; label: string }[]
+  value: string | null
+  onChange: (v: string) => void
+}) {
+  return (
+    <div>
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">{label}</label>
+      <div className="flex gap-2">
+        {options.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-all leading-tight ${
+              value === opt.value
+                ? 'bg-[#FF6B35]/15 border-[#FF6B35]/40 text-[#FF6B35]'
+                : 'bg-[#1A1A1A] border-[#333] text-gray-400 hover:border-[#444] hover:text-gray-200'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 function bmi(weight: number, heightCm: number) {
   const h = heightCm / 100
   return (weight / (h * h)).toFixed(1)
@@ -33,12 +66,21 @@ export default function SettingsPage() {
   const [error, setError] = useState('')
   const [xiaomiConnected, setXiaomiConnected] = useState<boolean | null>(null)
 
-  // Edit form state
+  // Profile form state
   const [fullName, setFullName] = useState('')
   const [gender, setGender] = useState<Gender | null>(null)
   const [age, setAge] = useState('')
   const [weight, setWeight] = useState('')
   const [height, setHeight] = useState('')
+
+  // Lifestyle habits state
+  const [smoking, setSmoking] = useState<string | null>(null)
+  const [alcohol, setAlcohol] = useState<string | null>(null)
+  const [sleepQuality, setSleepQuality] = useState<string | null>(null)
+  const [stressLevel, setStressLevel] = useState<string | null>(null)
+  const [waterIntake, setWaterIntake] = useState<string | null>(null)
+  const [habitsSaving, setHabitsSaving] = useState(false)
+  const [habitsSaved, setHabitsSaved] = useState(false)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadProfile(); loadXiaomiStatus() }, [])
@@ -71,6 +113,11 @@ export default function SettingsPage() {
     setAge(p.age?.toString() || '')
     setWeight(p.weight_kg?.toString() || '')
     setHeight(p.height_cm?.toString() || '')
+    setSmoking(p.smoking || null)
+    setAlcohol(p.alcohol || null)
+    setSleepQuality(p.sleep_quality || null)
+    setStressLevel(p.stress_level || null)
+    setWaterIntake(p.water_intake || null)
   }
 
   function startEditing() {
@@ -110,6 +157,24 @@ export default function SettingsPage() {
     setSaved(true)
     setEditing(false)
     setSaving(false)
+    await loadProfile()
+  }
+
+  async function saveHabits() {
+    setHabitsSaving(true)
+    setHabitsSaved(false)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('profiles').update({
+      smoking:       (smoking      ?? null) as Profile['smoking'],
+      alcohol:       (alcohol      ?? null) as Profile['alcohol'],
+      sleep_quality: (sleepQuality ?? null) as Profile['sleep_quality'],
+      stress_level:  (stressLevel  ?? null) as Profile['stress_level'],
+      water_intake:  (waterIntake  ?? null) as Profile['water_intake'],
+    }).eq('id', user.id)
+    setHabitsSaved(true)
+    setHabitsSaving(false)
     await loadProfile()
   }
 
@@ -329,6 +394,84 @@ export default function SettingsPage() {
             </div>
           </form>
         )}
+      </Card>
+
+      {/* Lifestyle habits */}
+      <Card>
+        <CardHeader>
+          <div>
+            <h2 className="text-sm font-semibold text-white">Образ жизни</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Используется для персональных рекомендаций</p>
+          </div>
+        </CardHeader>
+
+        <div className="space-y-5">
+          <HabitRow
+            label="Курение"
+            value={smoking}
+            onChange={setSmoking}
+            options={[
+              { value: 'never',     label: 'Никогда'   },
+              { value: 'sometimes', label: 'Иногда'    },
+              { value: 'regularly', label: 'Регулярно' },
+            ]}
+          />
+          <HabitRow
+            label="Алкоголь"
+            value={alcohol}
+            onChange={setAlcohol}
+            options={[
+              { value: 'never',    label: 'Никогда'       },
+              { value: 'holidays', label: 'По праздникам' },
+              { value: 'regularly',label: 'Регулярно'     },
+            ]}
+          />
+          <HabitRow
+            label="Качество сна"
+            value={sleepQuality}
+            onChange={setSleepQuality}
+            options={[
+              { value: 'under6', label: '< 6 часов' },
+              { value: '6to8',   label: '6–8 часов'  },
+              { value: 'over8',  label: '> 8 часов'  },
+            ]}
+          />
+          <HabitRow
+            label="Уровень стресса"
+            value={stressLevel}
+            onChange={setStressLevel}
+            options={[
+              { value: 'low',    label: 'Низкий'  },
+              { value: 'medium', label: 'Средний' },
+              { value: 'high',   label: 'Высокий' },
+            ]}
+          />
+          <HabitRow
+            label="Потребление воды"
+            value={waterIntake}
+            onChange={setWaterIntake}
+            options={[
+              { value: 'under1l', label: '< 1 л'   },
+              { value: '1to2l',   label: '1–2 л'    },
+              { value: 'over2l',  label: '> 2 л'    },
+            ]}
+          />
+        </div>
+
+        {habitsSaved && (
+          <div className="flex items-center gap-2 text-green-400 text-sm mt-4 bg-green-500/10 rounded-xl px-3 py-2">
+            <CheckCircle2 size={15} />
+            Привычки сохранены
+          </div>
+        )}
+
+        <Button
+          className="w-full mt-5"
+          loading={habitsSaving}
+          onClick={saveHabits}
+        >
+          Сохранить привычки
+        </Button>
       </Card>
 
       {/* Xiaomi integration */}

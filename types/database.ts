@@ -14,6 +14,11 @@ export interface Database {
           age: number | null
           weight_kg: number | null
           height_cm: number | null
+          smoking: 'never' | 'sometimes' | 'regularly' | null
+          alcohol: 'never' | 'holidays' | 'regularly' | null
+          sleep_quality: 'under6' | '6to8' | 'over8' | null
+          stress_level: 'low' | 'medium' | 'high' | null
+          water_intake: 'under1l' | '1to2l' | 'over2l' | null
           created_at: string
           updated_at: string
         }
@@ -27,6 +32,11 @@ export interface Database {
           age?: number | null
           weight_kg?: number | null
           height_cm?: number | null
+          smoking?: 'never' | 'sometimes' | 'regularly' | null
+          alcohol?: 'never' | 'holidays' | 'regularly' | null
+          sleep_quality?: 'under6' | '6to8' | 'over8' | null
+          stress_level?: 'low' | 'medium' | 'high' | null
+          water_intake?: 'under1l' | '1to2l' | 'over2l' | null
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +50,11 @@ export interface Database {
           age?: number | null
           weight_kg?: number | null
           height_cm?: number | null
+          smoking?: 'never' | 'sometimes' | 'regularly' | null
+          alcohol?: 'never' | 'holidays' | 'regularly' | null
+          sleep_quality?: 'under6' | '6to8' | 'over8' | null
+          stress_level?: 'low' | 'medium' | 'high' | null
+          water_intake?: 'under1l' | '1to2l' | 'over2l' | null
           created_at?: string
           updated_at?: string
         }

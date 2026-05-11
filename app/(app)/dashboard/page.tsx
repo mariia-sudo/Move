@@ -9,7 +9,7 @@ import { TrendingUp, Flame, Calendar, ChevronRight, Zap, Target } from 'lucide-r
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import type { Workout } from '@/types/database'
+import type { Workout, Profile } from '@/types/database'
 
 const SPORT_CONFIG = {
   weightlifting: { emoji: '🏋️', label: 'Силовые', color: 'orange' as const, href: '/workout/weightlifting' },
@@ -18,23 +18,47 @@ const SPORT_CONFIG = {
   padel: { emoji: '🏓', label: 'Падель', color: 'purple' as const, href: '/workout/padel' },
 }
 
-function getAIRecommendation(workouts: Workout[]): string[] {
-  const thisWeek = workouts.filter(w => isThisWeek(new Date(w.date), { weekStartsOn: 1 }))
-  const sports = thisWeek.map(w => w.sport_type)
+type LifestyleHabits = Pick<Profile, 'smoking' | 'alcohol' | 'sleep_quality' | 'stress_level' | 'water_intake'>
+
+function getAIRecommendation(workouts: Workout[], habits?: LifestyleHabits | null): string[] {
   const tips: string[] = []
 
-  if (thisWeek.length === 0) {
-    tips.push('Начните неделю активно — запишите первую тренировку сегодня!')
-    tips.push('Постоянство важнее интенсивности. Даже 20 минут — это уже результат.')
-  } else {
-    if (!sports.includes('running')) tips.push('Добавьте кардио для улучшения выносливости и восстановления.')
-    if (!sports.includes('weightlifting')) tips.push('Силовые тренировки — основа для всех видов спорта.')
-    if (thisWeek.length >= 4) tips.push('Отличная неделя! Обязательно включите хотя бы один день отдыха.')
-    if (sports.filter(s => s === 'running').length >= 2) tips.push('Варьируйте интенсивность бега — чередуйте лёгкие пробежки с интервалами.')
+  // ── Lifestyle-based tips (highest priority) ──
+  if (habits?.sleep_quality === 'under6') {
+    tips.push('Восстановление важнее интенсивности сегодня — недосыпание снижает силу и скорость реакции.')
+  }
+  if (habits?.smoking === 'sometimes' || habits?.smoking === 'regularly') {
+    tips.push('Кардио особенно важно для здоровья лёгких — регулярные пробежки помогают восстановить объём.')
+  }
+  if (habits?.stress_level === 'high') {
+    tips.push('Высокий стресс? Рекомендуем йогу или лёгкую растяжку после тренировки для восстановления.')
+  }
+  if (habits?.alcohol === 'regularly') {
+    tips.push('Алкоголь замедляет восстановление мышц на 48 часов — учитывайте это при планировании нагрузок.')
+  }
+  if (habits?.water_intake === 'under1l') {
+    tips.push('Пейте больше воды! Обезвоживание снижает силу и выносливость на 10–20%.')
+  }
+
+  // ── Workout-based tips ──
+  const thisWeek = workouts.filter(w => isThisWeek(new Date(w.date), { weekStartsOn: 1 }))
+  const sports = thisWeek.map(w => w.sport_type)
+
+  if (tips.length < 2) {
+    if (thisWeek.length === 0) {
+      tips.push('Начните неделю активно — запишите первую тренировку сегодня!')
+      tips.push('Постоянство важнее интенсивности. Даже 20 минут — это уже результат.')
+    } else {
+      if (!sports.includes('running'))       tips.push('Добавьте кардио для улучшения выносливости и восстановления.')
+      if (!sports.includes('weightlifting')) tips.push('Силовые тренировки — основа для всех видов спорта.')
+      if (thisWeek.length >= 4)              tips.push('Отличная неделя! Обязательно включите хотя бы один день отдыха.')
+      if (sports.filter(s => s === 'running').length >= 2)
+                                             tips.push('Варьируйте интенсивность бега — чередуйте лёгкие пробежки с интервалами.')
+    }
   }
 
   if (tips.length === 0) tips.push('Оставайтесь последовательны и доверяйте процессу. Прогресс есть!')
-  return tips.slice(0, 2)
+  return tips.slice(0, 3)
 }
 
 function computeStreak(ws: Workout[]): number {
@@ -60,6 +84,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(true)
   const [streak, setStreak] = useState(0)
+  const [habits, setHabits] = useState<LifestyleHabits | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -68,7 +93,9 @@ export default function DashboardPage() {
       if (!user) return
 
       const [profileRes, workoutsRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, gender, age, weight_kg, height_cm').eq('id', user.id).single(),
+        supabase.from('profiles')
+          .select('full_name, gender, age, weight_kg, height_cm, smoking, alcohol, sleep_quality, stress_level, water_intake')
+          .eq('id', user.id).single(),
         supabase.from('workouts').select('*').eq('user_id', user.id)
           .order('date', { ascending: false }).limit(20),
       ])
@@ -82,6 +109,8 @@ export default function DashboardPage() {
           router.replace('/profile/setup')
           return
         }
+        const { smoking, alcohol, sleep_quality, stress_level, water_intake } = profileRes.data
+        setHabits({ smoking, alcohol, sleep_quality, stress_level, water_intake })
       }
       if (workoutsRes.data) {
         setWorkouts(workoutsRes.data)
@@ -96,7 +125,7 @@ export default function DashboardPage() {
     isThisWeek(new Date(w.date), { weekStartsOn: 1 })
   )
   const recentWorkouts = workouts.slice(0, 5)
-  const tips = getAIRecommendation(workouts)
+  const tips = getAIRecommendation(workouts, habits)
 
   const sportCounts = workouts.reduce((acc, w) => {
     acc[w.sport_type] = (acc[w.sport_type] || 0) + 1
