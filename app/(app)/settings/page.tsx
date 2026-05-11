@@ -411,7 +411,7 @@ export default function SettingsPage() {
             value={smoking}
             onChange={setSmoking}
             options={[
-              { value: 'never',     label: 'Никогда'   },
+              { value: 'never',     label: 'Не курю'   },
               { value: 'sometimes', label: 'Иногда'    },
               { value: 'regularly', label: 'Регулярно' },
             ]}
@@ -421,7 +421,7 @@ export default function SettingsPage() {
             value={alcohol}
             onChange={setAlcohol}
             options={[
-              { value: 'never',    label: 'Никогда'       },
+              { value: 'never',    label: 'Не пью'        },
               { value: 'holidays', label: 'По праздникам' },
               { value: 'regularly',label: 'Регулярно'     },
             ]}

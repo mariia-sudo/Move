@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { format, startOfWeek, isThisWeek } from 'date-fns'
+import { format, startOfWeek, isThisWeek, subDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { TrendingUp, Flame, Calendar, ChevronRight, Zap, Target } from 'lucide-react'
+import { TrendingUp, Flame, Calendar, ChevronRight, Zap, Target, Wine, Cigarette, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -19,41 +19,44 @@ const SPORT_CONFIG = {
 }
 
 type LifestyleHabits = Pick<Profile, 'smoking' | 'alcohol' | 'sleep_quality' | 'stress_level' | 'water_intake'>
+type LogType = 'alcohol' | 'smoking'
 
-function getAIRecommendation(workouts: Workout[], habits?: LifestyleHabits | null): string[] {
+function getAIRecommendation(
+  workouts: Workout[],
+  habits?: LifestyleHabits | null,
+  recentLogTypes?: LogType[],
+): string[] {
   const tips: string[] = []
 
-  // ── Lifestyle-based tips (highest priority) ──
+  // ── Recent daily-log tips (highest priority) ──
+  if (recentLogTypes?.includes('alcohol')) {
+    tips.push('Алкоголь замедляет восстановление мышц на 48ч — рекомендуем лёгкую тренировку сегодня.')
+  }
+
+  // ── Lifestyle-habit tips ──
   if (habits?.sleep_quality === 'under6') {
-    tips.push('Восстановление важнее интенсивности сегодня — недосыпание снижает силу и скорость реакции.')
+    tips.push('Восстановление важнее интенсивности сегодня — недосыпание снижает силу и реакцию.')
   }
   if (habits?.smoking === 'sometimes' || habits?.smoking === 'regularly') {
     tips.push('Кардио особенно важно для здоровья лёгких — регулярные пробежки помогают восстановить объём.')
   }
   if (habits?.stress_level === 'high') {
-    tips.push('Высокий стресс? Рекомендуем йогу или лёгкую растяжку после тренировки для восстановления.')
-  }
-  if (habits?.alcohol === 'regularly') {
-    tips.push('Алкоголь замедляет восстановление мышц на 48 часов — учитывайте это при планировании нагрузок.')
+    tips.push('Высокий стресс? Рекомендуем йогу или лёгкую растяжку после тренировки.')
   }
   if (habits?.water_intake === 'under1l') {
-    tips.push('Пейте больше воды! Обезвоживание снижает силу и выносливость на 10–20%.')
+    tips.push('Пейте больше воды — обезвоживание снижает силу и выносливость на 10–20%.')
   }
 
   // ── Workout-based tips ──
-  const thisWeek = workouts.filter(w => isThisWeek(new Date(w.date), { weekStartsOn: 1 }))
-  const sports = thisWeek.map(w => w.sport_type)
-
   if (tips.length < 2) {
+    const thisWeek = workouts.filter(w => isThisWeek(new Date(w.date), { weekStartsOn: 1 }))
+    const sports = thisWeek.map(w => w.sport_type)
     if (thisWeek.length === 0) {
       tips.push('Начните неделю активно — запишите первую тренировку сегодня!')
-      tips.push('Постоянство важнее интенсивности. Даже 20 минут — это уже результат.')
     } else {
       if (!sports.includes('running'))       tips.push('Добавьте кардио для улучшения выносливости и восстановления.')
       if (!sports.includes('weightlifting')) tips.push('Силовые тренировки — основа для всех видов спорта.')
       if (thisWeek.length >= 4)              tips.push('Отличная неделя! Обязательно включите хотя бы один день отдыха.')
-      if (sports.filter(s => s === 'running').length >= 2)
-                                             tips.push('Варьируйте интенсивность бега — чередуйте лёгкие пробежки с интервалами.')
     }
   }
 
@@ -85,6 +88,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [streak, setStreak] = useState(0)
   const [habits, setHabits] = useState<LifestyleHabits | null>(null)
+  // today's logged types: { alcohol: bool, smoking: bool }
+  const [todayLogs, setTodayLogs] = useState<Record<LogType, boolean>>({ alcohol: false, smoking: false })
+  const [recentLogTypes, setRecentLogTypes] = useState<LogType[]>([])
+  const [loggingType, setLoggingType] = useState<LogType | null>(null)
+
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
 
   useEffect(() => {
     async function load() {
@@ -92,12 +102,15 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const [profileRes, workoutsRes] = await Promise.all([
+      const [profileRes, workoutsRes, logsRes] = await Promise.all([
         supabase.from('profiles')
           .select('full_name, gender, age, weight_kg, height_cm, smoking, alcohol, sleep_quality, stress_level, water_intake')
           .eq('id', user.id).single(),
         supabase.from('workouts').select('*').eq('user_id', user.id)
           .order('date', { ascending: false }).limit(20),
+        supabase.from('daily_logs').select('date, type')
+          .eq('user_id', user.id)
+          .gte('date', yesterday),
       ])
 
       if (profileRes.data) {
@@ -112,6 +125,18 @@ export default function DashboardPage() {
         const { smoking, alcohol, sleep_quality, stress_level, water_intake } = profileRes.data
         setHabits({ smoking, alcohol, sleep_quality, stress_level, water_intake })
       }
+
+      if (logsRes.data) {
+        const todayEntries = logsRes.data.filter(l => l.date === today)
+        setTodayLogs({
+          alcohol: todayEntries.some(l => l.type === 'alcohol'),
+          smoking: todayEntries.some(l => l.type === 'smoking'),
+        })
+        // Recent = yesterday OR today → drives AI tip
+        const recent = logsRes.data.map(l => l.type) as LogType[]
+        setRecentLogTypes([...new Set(recent)])
+      }
+
       if (workoutsRes.data) {
         setWorkouts(workoutsRes.data)
         setStreak(computeStreak(workoutsRes.data))
@@ -119,13 +144,35 @@ export default function DashboardPage() {
       setLoading(false)
     }
     load()
-  }, [router])
+  }, [router, today, yesterday])
+
+  async function toggleLog(type: LogType) {
+    setLoggingType(type)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setLoggingType(null); return }
+
+    if (todayLogs[type]) {
+      // Unlog — delete today's entry
+      await supabase.from('daily_logs')
+        .delete().eq('user_id', user.id).eq('date', today).eq('type', type)
+      setTodayLogs(prev => ({ ...prev, [type]: false }))
+      setRecentLogTypes(prev => prev.filter(t => t !== type))
+    } else {
+      // Log — upsert (safe if already exists)
+      await supabase.from('daily_logs')
+        .upsert({ user_id: user.id, date: today, type }, { onConflict: 'user_id,date,type' })
+      setTodayLogs(prev => ({ ...prev, [type]: true }))
+      if (!recentLogTypes.includes(type)) setRecentLogTypes(prev => [...prev, type])
+    }
+    setLoggingType(null)
+  }
 
   const thisWeekWorkouts = workouts.filter(w =>
     isThisWeek(new Date(w.date), { weekStartsOn: 1 })
   )
   const recentWorkouts = workouts.slice(0, 5)
-  const tips = getAIRecommendation(workouts, habits)
+  const tips = getAIRecommendation(workouts, habits, recentLogTypes)
 
   const sportCounts = workouts.reduce((acc, w) => {
     acc[w.sport_type] = (acc[w.sport_type] || 0) + 1
@@ -197,6 +244,40 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* Daily habit log */}
+      <Card>
+        <h2 className="text-sm font-semibold text-white mb-3">Отметить за сегодня</h2>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { type: 'alcohol' as LogType, icon: Wine,      label: 'Алкоголь',  activeClass: 'bg-purple-500/15 border-purple-500/30 text-purple-300' },
+            { type: 'smoking' as LogType, icon: Cigarette, label: 'Курение',   activeClass: 'bg-orange-500/15 border-orange-500/30 text-orange-300' },
+          ]).map(({ type, icon: Icon, label, activeClass }) => (
+            <button
+              key={type}
+              onClick={() => toggleLog(type)}
+              disabled={loggingType === type}
+              className={`flex items-center gap-2.5 px-3 py-3 rounded-xl border text-sm font-semibold transition-all disabled:opacity-60 ${
+                todayLogs[type]
+                  ? activeClass
+                  : 'bg-[#1A1A1A] border-[#333] text-gray-400 hover:border-[#444] hover:text-gray-200'
+              }`}
+            >
+              {todayLogs[type]
+                ? <Check size={16} />
+                : <Icon size={16} />
+              }
+              <span className="truncate">{label}</span>
+              {todayLogs[type] && <span className="ml-auto text-[10px] opacity-60">сегодня</span>}
+            </button>
+          ))}
+        </div>
+        {(todayLogs.alcohol || todayLogs.smoking) && (
+          <p className="text-xs text-gray-600 mt-2">
+            Нажмите ещё раз, чтобы снять отметку
+          </p>
+        )}
+      </Card>
 
       {/* AI Recommendations */}
       <Card>

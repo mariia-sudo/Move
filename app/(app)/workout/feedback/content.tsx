@@ -53,6 +53,7 @@ export default function FeedbackContent() {
   const [mood, setMood] = useState<FeedbackMood | null>(null)
   const [painAreas, setPainAreas] = useState<string[]>([])
   const [notes, setNotes] = useState('')
+  const [alcoholLast24h, setAlcoholLast24h] = useState(false)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -89,14 +90,23 @@ export default function FeedbackContent() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    await supabase.from('workout_feedback').insert({
-      workout_id: workoutId,
-      user_id: user.id,
-      energy_level: energy,
-      mood: mood ?? undefined,
-      pain_areas: painAreas,
-      notes: notes.trim() || null,
-    })
+    const today = new Date().toISOString().split('T')[0]
+    await Promise.all([
+      supabase.from('workout_feedback').insert({
+        workout_id: workoutId,
+        user_id: user.id,
+        energy_level: energy,
+        mood: mood ?? undefined,
+        pain_areas: painAreas,
+        notes: notes.trim() || null,
+      }),
+      alcoholLast24h
+        ? supabase.from('daily_logs').upsert(
+            { user_id: user.id, date: today, type: 'alcohol' },
+            { onConflict: 'user_id,date,type' }
+          )
+        : Promise.resolve(),
+    ])
 
     setDone(true)
     setTimeout(() => router.push('/dashboard'), 1200)
@@ -207,6 +217,30 @@ export default function FeedbackContent() {
         <p className="text-xs text-gray-500 mb-4">Отметьте, что болит или тянет</p>
         <BodyMap selected={painAreas} onChange={setPainAreas} />
       </Card>
+
+      {/* Alcohol checkbox */}
+      <button
+        type="button"
+        onClick={() => setAlcoholLast24h(v => !v)}
+        className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
+          alcoholLast24h
+            ? 'bg-purple-500/15 border-purple-500/30 text-purple-300'
+            : 'bg-[#111] border-[#222] text-gray-400 hover:border-[#333]'
+        }`}
+      >
+        <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 transition-all ${
+          alcoholLast24h
+            ? 'bg-purple-500 border-purple-500'
+            : 'border-[#444] bg-[#1A1A1A]'
+        }`}>
+          {alcoholLast24h && (
+            <svg viewBox="0 0 10 8" className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path d="M1 4l3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+        🍷 Употреблял алкоголь за последние 24ч
+      </button>
 
       {/* Notes */}
       <Card>

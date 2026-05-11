@@ -293,6 +293,28 @@ export interface Database {
         }
         Relationships: []
       }
+      daily_logs: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          type: 'alcohol' | 'smoking'
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date?: string
+          type: 'alcohol' | 'smoking'
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          notes?: string | null
+        }
+        Relationships: []
+      }
       workout_feedback: {
         Row: {
           id: string
@@ -334,6 +356,7 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type BodyMeasurement = Database['public']['Tables']['body_measurements']['Row']
 export type UserIntegration = Database['public']['Tables']['user_integrations']['Row']
 export type WorkoutFeedback = Database['public']['Tables']['workout_feedback']['Row']
+export type DailyLog = Database['public']['Tables']['daily_logs']['Row']
 export type FeedbackMood = 'tired' | 'good' | 'great' | 'overtrained'
 export type Gender = 'male' | 'female'
 export type Workout = Database['public']['Tables']['workouts']['Row']
