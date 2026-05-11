@@ -56,15 +56,12 @@ export function areaLabel(id: string): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-interface BodyMapProps {
-  selected: string[]
-  onChange: (areas: string[]) => void
-}
 
-function AreaShape({ area, active, onToggle }: {
+function AreaShape({ area, active, onToggle, readonly }: {
   area: BodyArea
   active: boolean
   onToggle: () => void
+  readonly?: boolean
 }) {
   const fill = active ? 'rgba(255,107,53,0.65)' : 'rgba(255,255,255,0.07)'
   const stroke = active ? '#FF6B35' : 'rgba(255,255,255,0.13)'
@@ -72,8 +69,8 @@ function AreaShape({ area, active, onToggle }: {
 
   const common = {
     fill, stroke, strokeWidth: sw,
-    onClick: onToggle,
-    style: { cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' },
+    onClick: readonly ? undefined : onToggle,
+    style: { cursor: readonly ? 'default' : 'pointer', transition: 'fill 0.15s, stroke 0.15s' },
   }
 
   if (area.shape === 'ellipse') {
@@ -82,10 +79,17 @@ function AreaShape({ area, active, onToggle }: {
   return <rect {...common} x={area.x} y={area.y} width={area.w} height={area.h} rx={area.r ?? 4} />
 }
 
-export function BodyMap({ selected, onChange }: BodyMapProps) {
+interface BodyMapProps {
+  selected: string[]
+  onChange: (areas: string[]) => void
+  readonly?: boolean
+}
+
+export function BodyMap({ selected, onChange, readonly }: BodyMapProps) {
   const [view, setView] = useState<BodyView>('front')
 
   const toggle = (id: string) => {
+    if (readonly) return
     onChange(selected.includes(id) ? selected.filter(a => a !== id) : [...selected, id])
   }
 
@@ -141,11 +145,10 @@ export function BodyMap({ selected, onChange }: BodyMapProps) {
           {/* Clickable areas — render in z order (larger behind, smaller in front) */}
           {/* Large areas first */}
           {visible.filter(a => a.shape === 'rect').map(area => (
-            <AreaShape key={area.id} area={area} active={selected.includes(area.id)} onToggle={() => toggle(area.id)} />
+            <AreaShape key={area.id} area={area} active={selected.includes(area.id)} onToggle={() => toggle(area.id)} readonly={readonly} />
           ))}
-          {/* Ellipses on top */}
           {visible.filter(a => a.shape === 'ellipse').map(area => (
-            <AreaShape key={area.id} area={area} active={selected.includes(area.id)} onToggle={() => toggle(area.id)} />
+            <AreaShape key={area.id} area={area} active={selected.includes(area.id)} onToggle={() => toggle(area.id)} readonly={readonly} />
           ))}
 
           {/* Area labels on selected items */}
