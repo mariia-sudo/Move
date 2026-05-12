@@ -58,7 +58,7 @@ export default function PadelPage() {
           <span className="text-xl">🏓</span>
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white">Записать падель</h1>
+          <h1 className="text-xl font-bold text-white">Записать падел</h1>
           <p className="text-gray-500 text-sm">Матч или тренировочная сессия</p>
         </div>
       </div>

@@ -20,7 +20,7 @@ const SPORT_LABEL: Record<string, string> = {
   weightlifting: 'Силовая',
   running: 'Пробежка',
   squash: 'Сквош',
-  padel: 'Падель',
+  padel: 'Падел',
 }
 
 const MOODS: { value: FeedbackMood; emoji: string; label: string; color: string }[] = [

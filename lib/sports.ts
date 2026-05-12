@@ -26,7 +26,7 @@ export const SPORT_CONFIG: Record<SportType, SportConfig> = {
   crossfit:      { emoji: '💪', label: 'Crossfit',    color: 'orange', colorHex: '#FF6B35', category: 'general'  },
   boxing:        { emoji: '🥊', label: 'Бокс',        color: 'red',    colorHex: '#EF4444', category: 'general'  },
   squash:        { emoji: '🎾', label: 'Сквош',       color: 'green',  colorHex: '#22C55E', category: 'racket'   },
-  padel:         { emoji: '🏓', label: 'Падель',      color: 'purple', colorHex: '#A855F7', category: 'racket'   },
+  padel:         { emoji: '🏓', label: 'Падел',      color: 'purple', colorHex: '#A855F7', category: 'racket'   },
   tennis:        { emoji: '🎾', label: 'Теннис',      color: 'green',  colorHex: '#22C55E', category: 'racket'   },
   football:      { emoji: '⚽', label: 'Футбол',      color: 'green',  colorHex: '#22C55E', category: 'team'     },
   basketball:    { emoji: '🏀', label: 'Баскетбол',   color: 'orange', colorHex: '#FF6B35', category: 'team'     },
