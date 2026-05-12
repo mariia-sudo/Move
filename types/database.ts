@@ -64,7 +64,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          sport_type: 'weightlifting' | 'running' | 'squash' | 'padel'
+          sport_type: 'weightlifting' | 'running' | 'squash' | 'padel' | 'yoga' | 'swimming' | 'cycling' | 'football' | 'basketball' | 'volleyball' | 'boxing' | 'crossfit' | 'tennis' | 'hockey'
           date: string
           notes: string | null
           duration_minutes: number | null
@@ -73,7 +73,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          sport_type: 'weightlifting' | 'running' | 'squash' | 'padel'
+          sport_type: 'weightlifting' | 'running' | 'squash' | 'padel' | 'yoga' | 'swimming' | 'cycling' | 'football' | 'basketball' | 'volleyball' | 'boxing' | 'crossfit' | 'tennis' | 'hockey'
           date: string
           notes?: string | null
           duration_minutes?: number | null
@@ -82,7 +82,7 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
-          sport_type?: 'weightlifting' | 'running' | 'squash' | 'padel'
+          sport_type?: 'weightlifting' | 'running' | 'squash' | 'padel' | 'yoga' | 'swimming' | 'cycling' | 'football' | 'basketball' | 'volleyball' | 'boxing' | 'crossfit' | 'tennis' | 'hockey'
           date?: string
           notes?: string | null
           duration_minutes?: number | null
@@ -365,5 +365,5 @@ export type WorkoutCardio = Database['public']['Tables']['workout_cardio']['Row'
 export type WorkoutRacket = Database['public']['Tables']['workout_racket']['Row']
 export type CycleLog = Database['public']['Tables']['cycle_logs']['Row']
 
-export type SportType = 'weightlifting' | 'running' | 'squash' | 'padel'
+export type SportType = 'weightlifting' | 'running' | 'squash' | 'padel' | 'yoga' | 'swimming' | 'cycling' | 'football' | 'basketball' | 'volleyball' | 'boxing' | 'crossfit' | 'tennis' | 'hockey'
 export type CyclePhase = 'menstrual' | 'follicular' | 'ovulatory' | 'luteal'

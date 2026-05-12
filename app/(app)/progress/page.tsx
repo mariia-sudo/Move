@@ -13,15 +13,10 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { areaLabel } from '@/components/workout/BodyMap'
 import type { Workout, WorkoutCardio, WorkoutSet } from '@/types/database'
+import { SPORT_CONFIG, ALL_SPORTS, SPORT_GENITIVE, type SportType } from '@/lib/sports'
 
-const SPORT_CONFIG = {
-  weightlifting: { emoji: '🏋️', label: 'Силовые', color: '#FF6B35' },
-  running: { emoji: '🏃', label: 'Бег', color: '#3B82F6' },
-  squash: { emoji: '🎾', label: 'Сквош', color: '#22C55E' },
-  padel: { emoji: '🏓', label: 'Падель', color: '#A855F7' },
-}
-
-const PIE_COLORS = ['#FF6B35', '#3B82F6', '#22C55E', '#A855F7']
+// Build hex palette for charts from shared config
+const PIE_COLORS = ALL_SPORTS.map(s => SPORT_CONFIG[s].colorHex)
 
 interface TooltipEntry { name: string; value: number | string; color: string }
 interface TooltipProps { active?: boolean; payload?: TooltipEntry[]; label?: string }
@@ -72,9 +67,7 @@ function detectPainInsights(feedback: FeedbackRow[]): PainInsight[] {
   return insights.sort((a, b) => b.count - a.count)
 }
 
-const SPORT_LABEL_MAP: Record<string, string> = {
-  weightlifting: 'силовых', running: 'пробежек', squash: 'сквоша', padel: 'паделя',
-}
+// Imported from lib/sports: SPORT_GENITIVE replaces SPORT_LABEL_MAP
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -154,14 +147,10 @@ export default function ProgressPage() {
         const d = new Date(w.date + 'T00:00:00')
         return d >= weekStart && d <= weekEnd
       })
-      return {
-        week: format(weekStart, 'd MMM', { locale: ru }),
-        total: weekWorkouts.length,
-        weightlifting: weekWorkouts.filter(w => w.sport_type === 'weightlifting').length,
-        running: weekWorkouts.filter(w => w.sport_type === 'running').length,
-        squash: weekWorkouts.filter(w => w.sport_type === 'squash').length,
-        padel: weekWorkouts.filter(w => w.sport_type === 'padel').length,
-      }
+      const sportCounts = Object.fromEntries(
+        ALL_SPORTS.map(s => [s, weekWorkouts.filter(w => w.sport_type === s).length])
+      )
+      return { week: format(weekStart, 'd MMM', { locale: ru }), total: weekWorkouts.length, ...sportCounts }
     })
   })()
 
@@ -219,7 +208,7 @@ export default function ProgressPage() {
         </Card>
         <Card className="text-center py-4">
           <div className="text-2xl font-bold text-green-400">
-            {workouts.filter(w => w.sport_type === 'squash' || w.sport_type === 'padel').length}
+            {workouts.filter(w => SPORT_CONFIG[w.sport_type as SportType]?.category === 'racket' || SPORT_CONFIG[w.sport_type as SportType]?.category === 'team').length}
           </div>
           <div className="text-xs text-gray-500 mt-1">Ракеточные виды</div>
         </Card>
@@ -239,10 +228,11 @@ export default function ProgressPage() {
               <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#666' }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#666' }} tickLine={false} axisLine={false} allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="weightlifting" stackId="a" fill="#FF6B35" name="Силовые" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="running" stackId="a" fill="#3B82F6" name="Бег" />
-              <Bar dataKey="squash" stackId="a" fill="#22C55E" name="Сквош" />
-              <Bar dataKey="padel" stackId="a" fill="#A855F7" name="Падель" radius={[4, 4, 0, 0]} />
+              {ALL_SPORTS.map((s, i) => (
+                <Bar key={s} dataKey={s} stackId="a" fill={SPORT_CONFIG[s].colorHex}
+                  name={SPORT_CONFIG[s].label}
+                  radius={i === ALL_SPORTS.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -352,7 +342,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <p className={`text-sm font-semibold ${ins.level === 'danger' ? 'text-red-300' : 'text-yellow-300'}`}>
-                    {areaLabel(ins.area)} — {ins.count} раз{ins.count >= 5 ? '' : 'а'} после {SPORT_LABEL_MAP[ins.sport] ?? ins.sport}
+                    {areaLabel(ins.area)} — {ins.count} раз{ins.count >= 5 ? '' : 'а'} после {SPORT_GENITIVE[ins.sport as SportType] ?? ins.sport}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {ins.level === 'danger'

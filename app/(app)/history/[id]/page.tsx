@@ -11,15 +11,9 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { BodyMap } from '@/components/workout/BodyMap'
 import type { Workout, WorkoutSet, WorkoutCardio, WorkoutRacket, WorkoutFeedback } from '@/types/database'
+import { SPORT_CONFIG, type SportType } from '@/lib/sports'
 
 // ─── Config ────────────────────────────────────────────────────────────────────
-
-const SPORT_CONFIG = {
-  weightlifting: { emoji: '🏋️', label: 'Силовая тренировка', color: 'orange' as const },
-  running:       { emoji: '🏃', label: 'Пробежка',           color: 'blue'   as const },
-  squash:        { emoji: '🎾', label: 'Сквош',              color: 'green'  as const },
-  padel:         { emoji: '🏓', label: 'Падель',             color: 'purple' as const },
-}
 
 const MOOD_CONFIG: Record<string, { emoji: string; label: string; variant: 'blue' | 'green' | 'orange' | 'red' }> = {
   tired:       { emoji: '😴', label: 'Устал',           variant: 'blue'   },
@@ -82,15 +76,16 @@ export default function WorkoutDetailPage() {
       if (!w) { router.replace('/history'); return }
       setWorkout(w)
 
+      const sportCat = SPORT_CONFIG[w.sport_type as SportType]?.category
       // Load sport-specific data in parallel
       const [setsRes, cardioRes, racketRes, fbRes] = await Promise.all([
-        w.sport_type === 'weightlifting'
+        sportCat === 'strength'
           ? supabase.from('workout_sets').select('*').eq('workout_id', id).order('created_at')
           : Promise.resolve({ data: [] }),
-        w.sport_type === 'running'
+        sportCat === 'cardio'
           ? supabase.from('workout_cardio').select('*').eq('workout_id', id).single()
           : Promise.resolve({ data: null }),
-        (w.sport_type === 'squash' || w.sport_type === 'padel')
+        (sportCat === 'racket' || sportCat === 'team')
           ? supabase.from('workout_racket').select('*').eq('workout_id', id).single()
           : Promise.resolve({ data: null }),
         supabase.from('workout_feedback').select('*').eq('workout_id', id).single(),
@@ -118,7 +113,7 @@ export default function WorkoutDetailPage() {
 
   if (!workout) return null
 
-  const cfg = SPORT_CONFIG[workout.sport_type]
+  const cfg = SPORT_CONFIG[workout.sport_type as SportType] ?? SPORT_CONFIG['weightlifting']
   const totalVolume = sets.reduce((s, r) => s + (r.weight_kg ?? 0) * r.sets * r.reps, 0)
 
   // Group sets by exercise name for display
@@ -163,7 +158,7 @@ export default function WorkoutDetailPage() {
       </div>
 
       {/* ── Weightlifting ── */}
-      {workout.sport_type === 'weightlifting' && sets.length > 0 && (
+      {cfg.category === 'strength' && sets.length > 0 && (
         <Card>
           <CardHeader>
             <h2 className="text-sm font-semibold text-white">Упражнения</h2>
@@ -190,7 +185,7 @@ export default function WorkoutDetailPage() {
       )}
 
       {/* ── Running ── */}
-      {workout.sport_type === 'running' && cardio && (
+      {cfg.category === 'cardio' && cardio && (
         <Card>
           <CardHeader>
             <h2 className="text-sm font-semibold text-white">Статистика пробежки</h2>
@@ -221,7 +216,7 @@ export default function WorkoutDetailPage() {
       )}
 
       {/* ── Racket sports ── */}
-      {(workout.sport_type === 'squash' || workout.sport_type === 'padel') && racket && (
+      {(cfg.category === 'racket' || cfg.category === 'team') && racket && (
         <Card>
           <CardHeader>
             <h2 className="text-sm font-semibold text-white">Матч</h2>

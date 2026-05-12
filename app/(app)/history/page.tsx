@@ -8,23 +8,17 @@ import { Calendar, ChevronRight, Filter } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-
-const SPORT_CONFIG = {
-  weightlifting: { emoji: '🏋️', label: 'Силовые',  color: 'orange' as const },
-  running:       { emoji: '🏃', label: 'Бег',       color: 'blue'   as const },
-  squash:        { emoji: '🎾', label: 'Сквош',     color: 'green'  as const },
-  padel:         { emoji: '🏓', label: 'Падель',    color: 'purple' as const },
-}
+import { SPORT_CONFIG, ALL_SPORTS, type SportType } from '@/lib/sports'
 
 const MOOD_EMOJI: Record<string, string> = {
   tired: '😴', good: '😊', great: '💪', overtrained: '😤',
 }
 
-type SportFilter = 'all' | keyof typeof SPORT_CONFIG
+type SportFilter = 'all' | SportType
 
 interface WorkoutRow {
   id: string
-  sport_type: keyof typeof SPORT_CONFIG
+  sport_type: SportType
   date: string
   duration_minutes: number | null
   notes: string | null
@@ -100,12 +94,9 @@ export default function HistoryPage() {
       {/* Sport filter */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         {([
-          { value: 'all', label: 'Все', emoji: null },
-          { value: 'weightlifting', label: 'Силовые', emoji: '🏋️' },
-          { value: 'running',       label: 'Бег',     emoji: '🏃' },
-          { value: 'squash',        label: 'Сквош',   emoji: '🎾' },
-          { value: 'padel',         label: 'Падель',  emoji: '🏓' },
-        ] as const).map(opt => (
+          { value: 'all' as SportFilter, label: 'Все', emoji: null },
+          ...ALL_SPORTS.map(s => ({ value: s as SportFilter, label: SPORT_CONFIG[s].label, emoji: SPORT_CONFIG[s].emoji })),
+        ]).map(opt => (
           <button
             key={opt.value}
             onClick={() => setFilter(opt.value)}

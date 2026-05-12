@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Dumbbell, TrendingUp, Heart, LogOut, Menu, X, Settings, Download, History } from 'lucide-react'
+import { LayoutDashboard, Dumbbell, TrendingUp, Heart, LogOut, Menu, X, Settings, Download, History, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { SPORT_GROUPS, SPORT_CONFIG } from '@/lib/sports'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Главная' },
@@ -60,26 +61,35 @@ export function AppNav() {
           ))}
 
           <div className="pt-4">
-            <p className="px-3 text-xs text-gray-600 uppercase tracking-wider font-semibold mb-2">Записать</p>
-            {[
-              { href: '/workout/weightlifting', label: 'Силовые', emoji: '🏋️' },
-              { href: '/workout/running', label: 'Бег', emoji: '🏃' },
-              { href: '/workout/squash', label: 'Сквош', emoji: '🎾' },
-              { href: '/workout/padel', label: 'Падель', emoji: '🏓' },
-            ].map(({ href, label, emoji }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  pathname === href
-                    ? 'bg-[#FF6B35]/10 text-[#FF6B35] border border-[#FF6B35]/15'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span className="text-base">{emoji}</span>
-                {label}
-              </Link>
-            ))}
+            <Link
+              href="/workout"
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium mb-1 transition-all ${
+                pathname === '/workout'
+                  ? 'bg-[#FF6B35]/10 text-[#FF6B35] border border-[#FF6B35]/15'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className="font-semibold uppercase tracking-wider text-xs">Записать</span>
+              <ChevronRight size={14} />
+            </Link>
+            {SPORT_GROUPS.flatMap(g => g.sports).map(sport => {
+              const cfg = SPORT_CONFIG[sport]
+              const href = `/workout/${sport}`
+              return (
+                <Link
+                  key={sport}
+                  href={href}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                    pathname === href
+                      ? 'bg-[#FF6B35]/10 text-[#FF6B35] border border-[#FF6B35]/15'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span className="text-sm">{cfg.emoji}</span>
+                  <span className="truncate">{cfg.label}</span>
+                </Link>
+              )
+            })}
           </div>
         </nav>
 
@@ -127,23 +137,28 @@ export function AppNav() {
               </Link>
             ))}
             <div className="pt-4 border-t border-[#1A1A1A]">
-              <p className="px-4 text-xs text-gray-600 uppercase tracking-wider font-semibold mb-2">Записать</p>
-              {[
-                { href: '/workout/weightlifting', label: 'Силовые', emoji: '🏋️' },
-                { href: '/workout/running', label: 'Бег', emoji: '🏃' },
-                { href: '/workout/squash', label: 'Сквош', emoji: '🎾' },
-                { href: '/workout/padel', label: 'Падель', emoji: '🏓' },
-              ].map(({ href, label, emoji }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-300"
-                >
-                  <span className="text-lg">{emoji}</span>
-                  {label}
-                </Link>
-              ))}
+              <Link
+                href="/workout"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-300"
+              >
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Записать тренировку</span>
+                <ChevronRight size={14} className="text-gray-600" />
+              </Link>
+              {SPORT_GROUPS.flatMap(g => g.sports).map(sport => {
+                const cfg = SPORT_CONFIG[sport]
+                return (
+                  <Link
+                    key={sport}
+                    href={`/workout/${sport}`}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300"
+                  >
+                    <span className="text-base">{cfg.emoji}</span>
+                    {cfg.label}
+                  </Link>
+                )
+              })}
             </div>
             <button
               onClick={signOut}
@@ -172,7 +187,7 @@ export function AppNav() {
             </Link>
           ))}
           <Link
-            href="/workout/weightlifting"
+            href="/workout"
             className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-gray-500"
           >
             <Dumbbell size={22} />

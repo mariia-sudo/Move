@@ -10,13 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import type { Workout, Profile } from '@/types/database'
-
-const SPORT_CONFIG = {
-  weightlifting: { emoji: '🏋️', label: 'Силовые', color: 'orange' as const, href: '/workout/weightlifting' },
-  running: { emoji: '🏃', label: 'Бег', color: 'blue' as const, href: '/workout/running' },
-  squash: { emoji: '🎾', label: 'Сквош', color: 'green' as const, href: '/workout/squash' },
-  padel: { emoji: '🏓', label: 'Падель', color: 'purple' as const, href: '/workout/padel' },
-}
+import { SPORT_CONFIG, type SportType } from '@/lib/sports'
 
 type LifestyleHabits = Pick<Profile, 'smoking' | 'alcohol' | 'sleep_quality' | 'stress_level' | 'water_intake'>
 type LogType = 'alcohol' | 'smoking'
@@ -225,24 +219,41 @@ export default function DashboardPage() {
       {/* Log workout */}
       <div>
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Записать тренировку</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {Object.entries(SPORT_CONFIG).map(([sport, cfg]) => (
-            <Link
-              key={sport}
-              href={cfg.href}
-              className="flex items-center gap-3 bg-[#111] border border-[#222] hover:border-[#FF6B35]/30 hover:bg-[#FF6B35]/5 rounded-2xl p-4 transition-all group"
-            >
-              <span className="text-2xl">{cfg.emoji}</span>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-white group-hover:text-[#FF6B35] transition-colors">{cfg.label}</div>
-                {sportCounts[sport] && (
-                  <div className="text-xs text-gray-600">{sportCounts[sport]} занятий</div>
-                )}
-              </div>
-              <ChevronRight size={16} className="text-gray-600 group-hover:text-[#FF6B35] transition-colors" />
-            </Link>
-          ))}
-        </div>
+        <Link
+          href="/workout"
+          className="flex items-center justify-between bg-[#111] border border-[#222] hover:border-[#FF6B35]/30 hover:bg-[#FF6B35]/5 rounded-2xl p-4 transition-all group mb-3"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🏃</span>
+            <div>
+              <div className="text-sm font-semibold text-white group-hover:text-[#FF6B35] transition-colors">Выбрать вид спорта</div>
+              <div className="text-xs text-gray-500">14 видов спорта</div>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-gray-600 group-hover:text-[#FF6B35] transition-colors" />
+        </Link>
+        {/* Quick-access recent sports */}
+        {Object.keys(sportCounts).length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {(Object.entries(sportCounts) as [SportType, number][])
+              .sort((a, b) => b[1] - a[1]).slice(0, 4)
+              .map(([sport, count]) => {
+                const cfg = SPORT_CONFIG[sport]
+                if (!cfg) return null
+                return (
+                  <Link
+                    key={sport}
+                    href={`/workout/${sport}`}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#FF6B35]/30 rounded-xl text-xs font-medium text-gray-400 hover:text-[#FF6B35] transition-all"
+                  >
+                    <span>{cfg.emoji}</span>
+                    <span>{cfg.label}</span>
+                    <span className="text-gray-600">{count}</span>
+                  </Link>
+                )
+              })}
+          </div>
+        )}
       </div>
 
       {/* Daily habit log */}
